@@ -1,0 +1,123 @@
+# Конфигурация для обучения LSTM модели
+
+data:
+  train_path: 'data/train.csv'
+  val_path: 'data/val.csv'
+  test_path: 'data/test.csv'
+  input_column: 'input'
+  target_column: 'target'
+
+model:
+  # Размерность векторов эмбеддингов
+  embedding_dim: 256
+
+  # Размерность скрытого слоя LSTM
+  hidden_dim: 512
+
+  # Количество слоев LSTM
+  num_layers: 2
+
+  # Вероятность dropout
+  dropout: 0.3
+
+  # Максимальная длина последовательности
+  max_sequence_length: 64
+
+vocabulary:
+  # Минимальная частота токена для включения в словарь
+  min_token_frequency: 2
+
+  # Специальные токены
+  special_tokens:
+    - '<PAD>'
+    - '<UNK>'
+    - '<SOS>'
+    - '<EOS>'
+
+training:
+  # Размер батча
+  batch_size: 256
+
+  # Количество эпох
+  num_epochs: 20
+
+  # Learning rate
+  learning_rate: 0.001
+
+  # Градиентный клиппинг
+  gradient_clip_norm: 1.0
+
+  # Параметры планировщика learning rate
+  scheduler:
+    type: 'ReduceLROnPlateau'
+    mode: 'min'
+    factor: 0.5
+    patience: 2
+
+generation:
+  # Температура для сэмплирования
+  temperature: 0.8
+
+  # Top-k фильтрация
+  top_k: 50
+
+  # Nucleus sampling (top-p)
+  top_p: 0.95
+
+  # Максимальное количество токенов для генерации
+  max_new_tokens: 50
+
+evaluation:
+  # Количество примеров для оценки ROUGE
+  num_samples: 200
+
+  # Какая часть входного текста используется
+  input_fraction: 0.75
+
+  # Частота валидации (в эпохах)
+  validation_frequency: 1
+
+  # Частота демонстрации примеров (в эпохах)
+  demo_frequency: 3
+
+logging:
+  # Уровень логирования
+  level: 'INFO'
+
+  # Частота логирования потерь (в батчах)
+  log_frequency: 100
+
+  # Файл для сохранения логов
+  log_file: 'training.log'
+
+checkpointing:
+  # Директория для сохранения чекпоинтов
+  checkpoint_dir: 'models'
+
+  # Частота сохранения чекпоинтов (в эпохах)
+  save_frequency: 5
+
+  # Сохранять ли лучшую модель
+  save_best: true
+
+transformer:
+  # Название предобученной модели
+  model_name: 'distilgpt2'
+
+  # Параметры генерации для подбора
+  generation_configs:
+    - temperature: 0.7
+      top_k: 40
+      top_p: 0.9
+
+    - temperature: 0.8
+      top_k: 50
+      top_p: 0.95
+
+    - temperature: 0.9
+      top_k: 60
+      top_p: 0.95
+
+    - temperature: 1.0
+      top_k: 50
+      top_p: 0.9
