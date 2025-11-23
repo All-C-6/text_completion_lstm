@@ -1,18 +1,15 @@
 # Конфигурация для обучения LSTM модели
 
 data:
-  train_path: 'data/train.csv'
-  val_path: 'data/val.csv'
-  test_path: 'data/test.csv'
-  input_column: 'input'
-  target_column: 'target'
+  url: 'code.s3.yandex.net/deep-learning/tweets.txt'
+  path: 'data/tweets.txt'
 
 model:
   # Размерность векторов эмбеддингов
-  embedding_dim: 256
+  embedding_dim: 128
 
   # Размерность скрытого слоя LSTM
-  hidden_dim: 512
+  hidden_dim: 256
 
   # Количество слоев LSTM
   num_layers: 2
@@ -21,7 +18,11 @@ model:
   dropout: 0.3
 
   # Максимальная длина последовательности
-  max_sequence_length: 64
+  max_sequence_length: 256
+
+  min_sequence_length: 20
+
+  save_path: 'lstm_model_weights.pth'
 
 vocabulary:
   # Минимальная частота токена для включения в словарь
@@ -36,10 +37,10 @@ vocabulary:
 
 training:
   # Размер батча
-  batch_size: 256
+  batch_size: 16
 
   # Количество эпох
-  num_epochs: 20
+  num_epochs: 10
 
   # Learning rate
   learning_rate: 0.001
@@ -83,12 +84,6 @@ evaluation:
 logging:
   # Уровень логирования
   level: 'INFO'
-
-  # Частота логирования потерь (в батчах)
-  log_frequency: 100
-
-  # Файл для сохранения логов
-  log_file: 'training.log'
 
 checkpointing:
   # Директория для сохранения чекпоинтов
