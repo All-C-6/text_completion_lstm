@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
+from torch.nn.utils.rnn import pad_sequence
 from transformers import GPT2Tokenizer
 from typing import Tuple
 import logging
@@ -54,7 +55,7 @@ class TextFileLinesDataset(Dataset):
 
 def create_train_val_test_dataloaders_from_text_file(
     file_path_to_text_data: str,
-    tokenizer = GPT2Tokenizer.from_pretrained("distilgpt2"),
+    tokenizer = None,  # Изменил на None, чтобы создавать внутри
     maximum_sequence_length: int = 512,
     batch_size_for_training: int = 8,
     batch_size_for_validation: int = 16,
@@ -71,7 +72,7 @@ def create_train_val_test_dataloaders_from_text_file(
 
     Args:
         file_path_to_text_data: путь к txt файлу
-        tokenizer_name_or_path: название или путь к токенизатору
+        tokenizer: токенизатор (если None, создаётся GPT2Tokenizer)
         maximum_sequence_length: максимальная длина последовательности
         batch_size_for_training: размер батча для обучения
         batch_size_for_validation: размер батча для валидации
@@ -91,10 +92,45 @@ def create_train_val_test_dataloaders_from_text_file(
     assert abs(total_split_ratio - 1.0) < 1e-6, \
         f"Сумма train/val/test должна быть 1.0, получено: {total_split_ratio}"
 
-    # Устанавливаем pad_token для GPT моделей
+    # Создаём токенизатор, если не передан
+    if tokenizer is None:
+        tokenizer = GPT2Tokenizer.from_pretrained("distilgpt2")
+
+    # Устанавливаем pad_token и padding_side для GPT моделей
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-        lo(f"pad_token не установлен, используется eos_token: '{tokenizer.eos_token}'")
+        print(f"pad_token не установлен, используется eos_token: '{tokenizer.eos_token}'")
+
+    # ВАЖНО: устанавливаем left padding для decoder-only моделей
+    tokenizer.padding_side = 'left'
+    print(f"padding_side установлен в: '{tokenizer.padding_side}'")
+
+    # Создаём collate_fn для правильного паддинга
+    def collate_fn_with_left_padding(batch):
+        """Collate функция с left padding для decoder-only моделей"""
+        input_ids_list = [item['input_ids'] for item in batch]
+        attention_mask_list = [item['attention_mask'] for item in batch]
+
+        # Паддинг слева для input_ids
+        input_ids_padded = pad_sequence(
+            [torch.flip(ids, [0]) for ids in input_ids_list],  # Переворачиваем
+            batch_first=True,
+            padding_value=tokenizer.pad_token_id
+        )
+        input_ids_padded = torch.flip(input_ids_padded, [1])  # Переворачиваем обратно
+
+        # Паддинг слева для attention_mask
+        attention_mask_padded = pad_sequence(
+            [torch.flip(mask, [0]) for mask in attention_mask_list],
+            batch_first=True,
+            padding_value=0
+        )
+        attention_mask_padded = torch.flip(attention_mask_padded, [1])
+
+        return {
+            'input_ids': input_ids_padded,
+            'attention_mask': attention_mask_padded
+        }
 
     # Создаём полный датасет
     full_dataset = TextFileLinesDataset(
@@ -125,29 +161,32 @@ def create_train_val_test_dataloaders_from_text_file(
         generator=generator_for_random_split
     )
 
-    # Создаём DataLoader для каждого split
+    # Создаём DataLoader для каждого split с collate_fn
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=batch_size_for_training,
         shuffle=shuffle_training_data,
         num_workers=number_of_dataloader_workers,
-        pin_memory=True  # Ускоряет передачу данных на GPU
+        pin_memory=True,
+        collate_fn=collate_fn_with_left_padding  # Добавляем collate_fn
     )
 
     validation_dataloader = DataLoader(
         validation_dataset,
         batch_size=batch_size_for_validation,
-        shuffle=False,  # Валидацию не перемешиваем
+        shuffle=False,
         num_workers=number_of_dataloader_workers,
-        pin_memory=True
+        pin_memory=True,
+        collate_fn=collate_fn_with_left_padding  # Добавляем collate_fn
     )
 
     test_dataloader = DataLoader(
         test_dataset,
         batch_size=batch_size_for_testing,
-        shuffle=False,  # Тест не перемешиваем
+        shuffle=False,
         num_workers=number_of_dataloader_workers,
-        pin_memory=True
+        pin_memory=True,
+        collate_fn=collate_fn_with_left_padding  # Добавляем collate_fn
     )
 
     return train_dataloader, validation_dataloader, test_dataloader

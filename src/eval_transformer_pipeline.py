@@ -3,7 +3,7 @@ from transformers import AutoModelForCausalLM
 import evaluate
 
 
-def evaluate_distilgpt2_rouge(tokenizer, validation_dataloader, device='cuda' if torch.cuda.is_available() else 'cpu'):
+def evaluate_distilgpt2_rouge(tokenizer, gpt_model, validation_dataloader, device='cuda' if torch.cuda.is_available() else 'cpu'):
     """
     Оценивает модель distilgpt2 на валидационном датасете с помощью метрик ROUGE-1 и ROUGE-2.
 
@@ -15,9 +15,9 @@ def evaluate_distilgpt2_rouge(tokenizer, validation_dataloader, device='cuda' if
     Returns:
         dict: словарь с метриками rouge1 и rouge2
     """
+    gpt_model.to(device)
     # Загружаем модель
-    model = AutoModelForCausalLM.from_pretrained('distilgpt2').to(device)
-    model.eval()
+    gpt_model.eval()
 
     # Загружаем метрику ROUGE
     rouge = evaluate.load('rouge')
@@ -33,19 +33,23 @@ def evaluate_distilgpt2_rouge(tokenizer, validation_dataloader, device='cuda' if
             # Берем 75% токенов для prompt
             prompt_length = int(input_ids.shape[1] * 0.75)
             prompt_ids = input_ids[:, :prompt_length]
+            prompt_attention_mask = attention_mask[:, :prompt_length]
 
             # Генерируем оставшиеся 25%
-            generated_ids = model.generate(
+            generated_ids = gpt_model.generate(
                 prompt_ids,
-                max_length=input_ids.shape[1],
+                attention_mask=prompt_attention_mask,  # Добавьте attention_mask
+                max_length=input_ids.shape[1], 
                 pad_token_id=tokenizer.eos_token_id,
-                do_sample=False
+                do_sample=False,
             )
 
             # Декодируем предсказания и референсы
+            print("Generated:")
             batch_predictions = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+            print("Reference:")
             batch_references = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
-
+            print("end")
             predictions.extend(batch_predictions)
             references.extend(batch_references)
 

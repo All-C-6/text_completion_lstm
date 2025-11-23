@@ -32,7 +32,8 @@ def train_code_completion_model(model, train_loader, val_loader, tokenizer, n_ep
     for epoch in range(n_epochs):
         # Training
         model.train()
-        train_loss = 0.
+        train_loss = 0
+        print(tqdm(train_loader, desc=f"Epoch {epoch+1}/{n_epochs} [Train]")[0])
         for x_batch, y_batch in tqdm(train_loader, desc=f"Epoch {epoch+1}/{n_epochs} [Train]"):
             x_batch, y_batch = x_batch.to(device), y_batch.to(device)
             optimizer.zero_grad()
