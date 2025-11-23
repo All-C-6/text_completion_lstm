@@ -5,6 +5,12 @@ from rouge_score import rouge_scorer
 import logging
 import numpy as np
 
+from common_utils import setup_logging
+
+
+setup_logging(log_file_name="GPT_eval.log", level="INFO")
+logger = logging.getLogger(__name__)
+
 
 def validate_pretrained_gpt2_model(
     tokenizer,
@@ -30,8 +36,7 @@ def validate_pretrained_gpt2_model(
     Returns:
         Dict со значениями validation_loss, rouge1, rouge2
     """
-    logger = logging.getLogger(__name__)
-
+    
     model.eval()
     model.to(device)
 

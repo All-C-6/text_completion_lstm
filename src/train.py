@@ -216,7 +216,7 @@ def train_code_completion_model(
         if examples_displayed == 0:
             logger.info("Не удалось сгенерировать примеры (возможно, все последовательности слишком короткие)\n")
 
-        # ==================== LOGGING ====================
+        # ==================== Вывод в ячейку ====================
         if rouge1_score is not None:
             print(f"Epoch {epoch+1}/{n_epochs} | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f} | "
                   f"ROUGE-1: {rouge1_score:.4f} | ROUGE-2: {rouge2_score:.4f}\n")

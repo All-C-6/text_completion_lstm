@@ -1,5 +1,12 @@
 import torch
 import torch.nn as nn
+import logging
+
+from common_utils import setup_logging
+
+
+setup_logging(log_file_name="lstm_model.log", level="INFO")
+logger = logging.getLogger(__name__)
 
 
 class LSTMNextTokenPredictor(nn.Module):
@@ -19,6 +26,7 @@ class LSTMNextTokenPredictor(nn.Module):
         self.lstm = nn.LSTM(embedding_dim, hidden_dim, num_layers, 
                             batch_first=True, dropout=dropout if num_layers > 1 else 0)
         self.fc = nn.Linear(hidden_dim, vocab_size)
+        logger.info(f"Модель LSTMNextTokenPredictor инициализирована с параметрами: vocab_size={vocab_size}, embedding_dim={embedding_dim}, hidden_dim={hidden_dim}, num_layers={num_layers}, num_layers={dropout}")
 
     def forward(self, input_token_sequence, return_all_logits=False):
         """
@@ -160,7 +168,3 @@ class LSTMNextTokenPredictor(nn.Module):
                 generated_sequence = torch.cat([generated_sequence, next_token], dim=1)
 
             return generated_sequence
-
-
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters())

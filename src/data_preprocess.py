@@ -196,7 +196,7 @@ def clean_text_file(
 
     except Exception as exception:
         error_message = f"Ошибка при обработке файла: {str(exception)}"
-        print(error_message)
+        logger.error(error_message)
         raise
 
 
@@ -234,7 +234,7 @@ def create_train_val_test_dataloaders_from_text_file(
     # Устанавливаем pad_token и padding_side для GPT моделей
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-        print(f"pad_token не установлен, используется eos_token: '{tokenizer.eos_token}'")
+        logger.warning(f"pad_token не установлен, используется eos_token: '{tokenizer.eos_token}'")
 
     # Создаём collate_fn для правильного паддинга
     def collate_fn_with_left_padding(batch):
@@ -283,7 +283,7 @@ def create_train_val_test_dataloaders_from_text_file(
     )
 
     total_number_of_samples = len(full_dataset)
-    print(f"Всего валидных строк в датасете: {total_number_of_samples}")
+    logger.debug(f"Всего валидных строк в датасете: {total_number_of_samples}")
 
     if total_number_of_samples == 0:
         raise ValueError("Датасет пуст после фильтрации! Проверьте файл данных.")
